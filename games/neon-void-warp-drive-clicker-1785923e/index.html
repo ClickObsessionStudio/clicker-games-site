@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en" data-state-lockout="0" data-state-wormhole="0" data-state-solarflare="0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Neon Void: Warp Drive Clicker</title>
+  <style>
+    :root{
+      --bg:#0B0E1A;
+      --fg:#D7F8FF;
+      --accent:#00E5FF;
+      --hot:#FF00A6;
+      --muted:#78838a;
+      --panel:#0f1428;
+      --ok:#19e68c;
+      --warn:#ffcc00;
+      --focus:#00E5FF;
+      --shadow: rgba(0,0,0,0.3);
+      --radius:12px;
+      --gap:12px;
+      --fz:16px;
+      --speed:160ms;
+    }
+    @media (prefers-color-scheme: light){
+      :root{ --bg:#f8fbff; --fg:#0b0e1a; --panel:#eef5ff; --shadow:rgba(0,0,0,0.1);}
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font: 400 var(--fz)/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(0,229,255,0.12), transparent 60%),
+                  radial-gradient(1400px 900px at 120% 20%, rgba(255,0,166,0.08), transparent 50%),
+                  var(--bg);
+      color:var(--fg);
+      display:flex; flex-direction:column;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .hc body, body.hc{
+      --bg:#000; --fg:#fff; --panel:#111; --accent:#0ff; --hot:#f0f; --muted:#ccc; --shadow:rgba(255,255,255,0.1);
+    }
+    body.lg{ --fz:18px; }
+    .hidden{ display:none !important; }
+    .sr-only{ position:absolute !important; left:-9999px !important; width:1px;height:1px; overflow:hidden; }
+    .pad{ padding:var(--gap); }
+    .flex{ display:flex; gap:var(--gap); }
+    .grid{ display:grid; gap:var(--gap); }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px var(--gap);
+      background: linear-gradient(0deg, rgba(0,229,255,0.08), rgba(0,229,255,0.02));
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(4px);
+    }
+    .topbar__group{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .pill{
+      border:1px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.03);
+      color:var(--fg);
+      border-radius:999px; padding:6px 10px;
+      display:inline-flex; align-items:center; gap:8px;
+      min-height:36px;
+    }
+    .resource{ font-weight:700; letter-spacing:0.2px;}
+    .resource .unit{ color:var(--accent); }
+    .btn{
+      cursor:pointer; user-select:none; -webkit-tap-highlight-color: transparent;
+      border:1px solid rgba(255,255,255,0.15);
+      background:linear-gradient(180deg, rgba(0,229,255,0.1), rgba(0,229,255,0.04));
+      color:var(--fg);
+      padding:10px 12px; border-radius:10px;
+      transition: transform var(--speed) ease, background var(--speed) ease, border-color var(--speed) ease;
+      min-height:44px;
+    }
+    .btn:hover{ background:linear-gradient(180deg, rgba(0,229,255,0.14), rgba(0,229,255,0.06)); }
+    .btn:active{ transform:scale(0.98); }
+    .btn--primary{
+      background:linear-gradient(180deg, rgba(0,229,255,0.25), rgba(0,229,255,0.08));
+      border-color:rgba(0,229,255,0.6);
+      box-shadow: 0 10px 30px rgba(0,229,255,0.12), inset 0 0 40px rgba(0,229,255,0.12);
+      font-weight:700; letter-spacing:0.4px;
+    }
+    .btn--danger{ border-color: rgba(255,0,166,0.6); background:linear-gradient(180deg, rgba(255,0,166,0.2), rgba(255,0,166,0.05)); }
+    .btn[disabled]{ opacity:0.5; cursor:not-allowed; }
+    .warp{
+      display:grid; gap:14px; padding:var(--gap);
+    }
+    .warp-btn{
+      width:100%; min-height:120px; border-radius:16px;
+      font-size:clamp(20px, 6vw, 32px);
+      text-transform:uppercase;
+      position:relative; overflow:hidden;
+    }
+    .warp-btn .hint{ position:absolute; bottom:6px; right:10px; font-size:12px; color:var(--muted); }
+    .meters{ display:grid; gap:10px; }
+    .meter{
+      background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.12));
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:12px; padding:8px;
+    }
+    .meter__label{ font-size:12px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .bar{ height:14px; background:rgba(255,255,255,0.08); border-radius:999px; position:relative; overflow:hidden; }
+    .bar__fill{ position:absolute; inset:0; width:0%; background: linear-gradient(90deg, var(--hot), var(--accent)); border-radius:999px; transition:width var(--speed) linear; }
+    .bar__safe{ position:absolute; top:0; bottom:0; border:2px dashed rgba(0,229,255,0.8); border-radius:8px; pointer-events:none; opacity:0.8; }
+    .bar__marker{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--accent); opacity:0.5; left:50%; transform:translateX(-1px); }
+    .meter--combo .bar__fill{ background: linear-gradient(90deg, var(--ok), var(--accent)); }
+    .badges{ display:flex; gap:8px; flex-wrap:wrap; }
+    .badge{
+      padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.2);
+      background:rgba(255,255,255,0.06); font-size:12px; color:var(--fg);
+    }
+    .layout{ display:grid; gap:var(--gap); grid-template-columns:1fr; padding:var(--gap); }
+    @media (min-width:768px){
+      .layout{ grid-template-columns: 1.2fr 0.8fr; align-items:start; }
+    }
+    .panel{
+      background:var(--panel); border:1px solid rgba(255,255,255,0.08); border-radius:12px;
+      box-shadow: 0 10px 24px var(--shadow);
+    }
+    details.panel summary{
+      list-style:none; cursor:pointer; padding:12px var(--gap);
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      font-weight:600; letter-spacing:0.3px;
+    }
+    details.panel[open] summary{ background:linear-gradient(180deg, rgba(255,255,255,0.04), transparent); }
+    .list{ display:grid; gap:10px; padding:var(--gap); }
+    .card{
+      display:grid; gap:8px; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px;
+      background:rgba(255,255,255,0.03);
+    }
+    .card__row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .card__title{ font-weight:700; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .stats{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .stat{ background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px; }
+    .stat__label{ font-size:12px; color:var(--muted); }
+    .stat__value{ font-weight:700; }
+    .tabs{ display:flex; gap:8px; }
+    .footer{
+      padding:12px var(--gap); font-size:12px; color:var(--muted); text-align:center;
+      border-top:1px solid rgba(255,255,255,0.08);
+    }
+    .help{ font-size:13px; color:var(--muted); }
+    .version{ opacity:0.8; }
+
+    /* Focus styles */
+    :focus-visible{
+      outline:3px solid var(--focus); outline-offset:2px; border-radius:8px;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      :root{ --speed:0ms; }
+      .bar__fill{ transition:none; }
+      .btn{ transition:none; }
+    }
+    body.rm{ --speed:0ms; }
+
+    /* QA state reflectors */
+    [data-flag]{ font-size:11px; color:var(--muted); }
+
+    /* High contrast modifier */
+    .meter--danger .bar__fill{ background: linear-gradient(90deg, #ff3b3b, #ff9a3b); }
+
+    /* Icons */
+    .ico{ width:1em; height:1em; display:inline-block; }
+  </style>
+</head>
+<body>
+  <header class="topbar" role="banner">
+    <div class="topbar__group">
+      <div class="pill resource" aria-live="polite" aria-atomic="true">
+        <span class="unit">Stardust</span>: <span id="stardust">0</span>
+      </div>
+      <div class="pill">
+        Keys: <span id="qkeys">0</span>
+      </div>
+    </div>
+    <div class="topbar__group">
+      <div class="pill">
+        <label><input type="checkbox" id="muteAll"> Mute All</label>
+        <label><input type="checkbox" id="muteSfx"> SFX Off</label>
+        <label><input type="checkbox" id="bgmToggle"> BGM</label>
+      </div>
+      <div class="pill">
+        <label><input type="checkbox" id="hcToggle"> High Contrast</label>
+        <label><input type="checkbox" id="lgToggle"> Large Text</label>
+        <label><input type="checkbox" id="rmToggle"> Reduce Motion</label>
+      </div>
+      <button class="btn" id="resetBtn" aria-label="Reset progress">Reset</button>
+    </div>
+  </header>
+
+  <main class="layout" role="main">
+    <section class="panel warp">
+      <button class="btn btn--primary warp-btn" id="warpBtn" aria-label="Warp: Tap to collect Stardust">
+        WARP
+        <span class="hint">Space/Enter</span>
+      </button>
+      <div class="meters">
+        <div class="meter meter--heat" aria-label="Heat Meter">
+          <div class="meter__label">
+            <div>Heat <span id="heatPct">0%</span> / Threshold <span id="thrVal">100</span></div>
+            <div class="badges">
+              <span class="badge hidden" id="lockoutBadge" aria-live="polite">Overheat Lockout</span>
+              <span class="badge hidden" id="wormholeBadge" aria-live="polite">Wormhole Window</span>
+              <span class="badge hidden" id="solarBadge" aria-live="polite">Solar Flare x2</span>
+              <span class="badge hidden" id="surgeBadge" aria-live="polite">Quantum Surge</span>
+            </div>
+          </div>
+          <div class="bar" id="heatBar">
+            <div class="bar__fill" id="heatFill" style="width:0%"></div>
+            <div class="bar__safe" id="safeZone" style="left:40%; right:40%"></div>
+            <div class="bar__marker" id="safeMarker" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="meter meter--combo">
+          <div class="meter__label">
+            <div>Combo <span id="comboVal">0</span></div>
+            <div class="muted">Perfect taps build combo for bonus</div>
+          </div>
+          <div class="bar" id="comboBar">
+            <div class="bar__fill" id="comboFill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat__label">Per Tap (est.)</div>
+          <div class="stat__value" id="perTap">1</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Global Multiplier</div>
+          <div class="stat__value" id="multVal">x1.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Crit Chance</div>
+          <div class="stat__value" id="critVal">0%</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Heat per Tap</div>
+          <div class="stat__value" id="heatPerTap">10</div>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="pad">
+          <h2 style="margin:0 0 6px">Upgrades</h2>
+          <div class="muted">One-time ship upgrades that enhance tapping and control.</div>
+        </div>
+        <div class="list" id="upgradesList" role="list">
+          <!-- dynamically populated -->
+        </div>
+      </section>
+    </section>
+
+    <aside class="grid">
+      <details class="panel" open>
+        <summary>Shop: Modules</summary>
+        <div class="list" id="shopList" role="list"></div>
+      </details>
+
+      <details class="panel">
+        <summary>Achievements & Milestones</summary>
+        <div class="list" id="achList"></div>
+      </details>
+
+      <details class="panel">
+        <summary>Prestige</summary>
+        <div class="pad">
+          <div class="muted">Convert lifetime Stardust into Quantum Keys for permanent gains.</div>
+          <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+            <div class="stat">
+              <div class="stat__label">Lifetime Stardust</div>
+              <div class="stat__value" id="lifeVal">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat__label">Keys on Prestige</div>
+              <div class="stat__value" id="prestigeGain">0</div>
+            </div>
+          </div>
+          <button class="btn btn--danger" id="prestigeBtn" disabled>Prestige</button>
+          <div class="help" style="margin-top:8px;">
+            Earn Keys = floor(total lifetime Stardust / 100000). Resets Stardust, modules, and upgrades; keeps achievements and settings.
+            Global tap multiplier = 1 + 0.05 × Keys.
+          </div>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>Help & About</summary>
+        <div class="pad help">
+          <strong>Neon Void: Warp Drive Clicker</strong><br>
+          Tap WARP to collect Stardust. Keep the heat needle inside the Safe Zone to trigger Perfect Burns, build combo, and avoid overheating. Buy modules, snag upgrades, and time event windows for bursts. No idle gain—it's all you.<br><br>
+          Hot tips:
+          <ul>
+            <li>Perfect Burns grant +50% Stardust and reduce heat slightly.</li>
+            <li>Combo adds a small per-tap bonus (upgrade to boost it).</li>
+            <li>Overheating locks controls briefly. Improve safety to push longer.</li>
+            <li>Wormhole windows appear every ~90–120s. Tap inside for x3 (up to 5 taps).</li>
+            <li>Reach 50 combo to trigger Solar Flare: next 10 taps x2 and half heat.</li>
+            <li>Prestige converts lifetime Stardust into Quantum Keys for permanent power.</li>
+          </ul>
+          Accessibility and settings are in the top bar. Fully operable by keyboard: Space/Enter to tap, Tab/Arrows to navigate. Audio is synthesized locally and can be muted.
+        </div>
+      </details>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <span class="version">v1.0 • Neon space engineering aboard a starship warp core</span>
+  </footer>
+
+  <script>
+  (function(){
+    'use strict';
+
+    // Storage Module
+    const SAVE_KEY = 'save_v1';
+    const SETTINGS_KEY = 'settings_v1';
+    const SAVE_INTERVAL = 10000;
+
+    const defaultSettings = ()=>({
+      mute_all:false,
+      mute_sfx:false,
+      bgm:false,
+      hc:false,
+      lg:false,
+      rm:false
+    });
+
+    const defaultState = ()=>({
+      title:"Neon Void: Warp Drive Clicker",
+      stardust:0,
+      totalLifetime:0,
+      combo:0,
+      heat:0,
+      thresholdBase:100,
+      lastTap:0,
+      totalClicks:0,
+
+      modules:{ // levels
+        TapAmplifier:0,
+        FluxCoil:0,
+        QuantumCompressor:0,
+        InertiaMatrix:0
+      },
+      upgrades:{ // purchased flags
+        "Nano-Actuator I":false,
+        "Overclock Safety I":false,
+        "Pulse Stabilizer":false,
+        "Crit Matrix I":false,
+        "Thermal Paste MkII":false,
+        "Binary Burst":false,
+        "Nano-Actuator II":false,
+        "Overclock Safety II":false,
+        "Crit Matrix II":false,
+        "Flux Sync":false,
+        "Quantum Grease":false,
+        "Precision HUD":false
+      },
+      milestones:{},
+      permanent:{
+        tapMultBonus:0, // from 1000 milestone
+        basePerTapBonus:0, // from 50000 milestone
+        cooldownReduction:0, // from 250000 milestone
+        critChanceBonus:0 // from 1e6 milestone (+2%)
+      },
+
+      // Events
+      overheatLockoutUntil:0,
+      solarFlareTaps:0,
+      wormholeActive:false,
+      wormholeWindowEnd:0,
+      wormholeTapsUsed:0,
+      nextWormholeAt:0,
+
+      // Prestige
+      prestigeUnlocked:false,
+      quantumKeys:0,
+      firstRunBonusActive:false,
+      lastPrestigeTime:0, // ms
+      runStart: Date.now(),
+
+      // Audio unlocked flag
+      audioArmed:false
+    });
+
+    const state = loadState();
+    const settings = loadSettings();
+
+    function loadState(){
+      let s = defaultState();
+      try{
+        const raw = localStorage.getItem(SAVE_KEY);
+        if(raw){ Object.assign(s, JSON.parse(raw)); }
+      }catch(e){}
+      // Normalize missing fields after version changes
+      s.milestones = s.milestones || {};
+      s.permanent = Object.assign({tapMultBonus:0,basePerTapBonus:0,cooldownReduction:0,critChanceBonus:0}, s.permanent||{});
+      s.modules = Object.assign({TapAmplifier:0,FluxCoil:0,QuantumCompressor:0,InertiaMatrix:0}, s.modules||{});
+      s.upgrades = Object.assign(defaultState().upgrades, s.upgrades||{});
+      if(!s.runStart) s.runStart = Date.now();
+      return s;
+    }
+    function loadSettings(){
+      let st = defaultSettings();
+      try{
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if(raw){ Object.assign(st, JSON.parse(raw)); }
+      }catch(e){}
+      return st;
+    }
+    function saveState(throttle=false){
+      if(throttle){
+        const now = Date.now();
+        if(saveState._next && now < saveState._next) return;
+        saveState._next = now + 1500;
+      }
+      try{
+        const persist = Object.assign({}, state);
+        // Remove volatile event timers that can be refreshed
+        // Keep enough to resume properly; it's okay to persist them too.
+        localStorage.setItem(SAVE_KEY, JSON.stringify(persist));
+      }catch(e){}
+    }
+    function saveSettings(){
+      try{
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      }catch(e){}
+    }
+    setInterval(()=>saveState(true), SAVE_INTERVAL);
+    window.addEventListener('beforeunload', ()=>{ saveState(false); saveSettings(); });
+
+    // Economy/Config
+    const fmtInt = n => Math.floor(n).toLocaleString();
+    const fmtNum = (n)=> {
+      if(n>=1e9) return (n/1e9).toFixed(2)+"B";
+      if(n>=1e6) return (n/1e6).toFixed(2)+"M";
+      if(n>=1e3) return (n/1e3).toFixed(2)+"K";
+      return Math.floor(n).toString();
+    };
+    const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
+
+    const modulesSpec = [
+      {key:'TapAmplifier', name:'Tap Amplifier', unlocked_at:100, base:50, mult:1.25, desc:'Adds +1 Stardust per tap per level'},
+      {key:'FluxCoil', name:'Flux Coil', unlocked_at:1000, base:400, mult:1.3, desc:'+5% tap multiplier per level'},
+      {key:'QuantumCompressor', name:'Quantum Compressor', unlocked_at:10000, base:1800, mult:1.35, desc:'Widens Safe Zone +2% per level'},
+      {key:'InertiaMatrix', name:'Inertia Matrix', unlocked_at:20000, base:8000, mult:1.4, desc:'Reduces heat per tap -3% per level'}
+    ];
+    const upgradesSpec = [
+      {name:'Nano-Actuator I', effect:'+1 Stardust per tap', cost:80},
+      {name:'Overclock Safety I', effect:'+10% overheat threshold', cost:150},
+      {name:'Pulse Stabilizer', effect:'Safe Zone +5% width', cost:300},
+      {name:'Crit Matrix I', effect:'+3% crit chance (x2 on crit)', cost:600},
+      {name:'Thermal Paste MkII', effect:'-10% heat per tap', cost:1200},
+      {name:'Binary Burst', effect:'+0.5% per-tap combo bonus (caps at +50%)', cost:2500},
+      {name:'Nano-Actuator II', effect:'+3 Stardust per tap', cost:4000},
+      {name:'Overclock Safety II', effect:'+15% overheat threshold', cost:6500},
+      {name:'Crit Matrix II', effect:'+5% crit chance (x2.2 on crit)', cost:11000},
+      {name:'Flux Sync', effect:'Event tap windows last +30% longer', cost:18000},
+      {name:'Quantum Grease', effect:'-25% overheat cooldown time', cost:26000},
+      {name:'Precision HUD', effect:'Adds timing guide; +5% tap accuracy bonus', cost:34000}
+    ];
+    const milestonesSpec = [
+      {at_total:100, reward:'Unlock Tap Amplifier module'},
+      {at_total:1000, reward:'Unlock Flux Coil module; +5% tap multiplier'},
+      {at_total:10000, reward:'Unlock Quantum Compressor; +1% Safe Zone width'},
+      {at_total:50000, reward:'Permanent +1 base Stardust per tap'},
+      {at_total:100000, reward:'Unlock Prestige; first run bonus +10% tap multiplier'},
+      {at_total:250000, reward:'Overheat cooldown reduced by 20%'},
+      {at_total:1000000, reward:'Crit chance +2% permanently'}
+    ];
+
+    // Audio Module
+    const Audio = (()=> {
+      let ctx=null, master, sfxGain, musicGain, musicOsc=null, musicSeq=null, armed=false;
+      const safeCtx = ()=> {
+        if(settings.mute_all) return null;
+        if(!ctx){
+          try{
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if(!AC) return null;
+            ctx = new AC();
+            master = ctx.createGain(); master.gain.value=0.8; master.connect(ctx.destination);
+            sfxGain = ctx.createGain(); sfxGain.gain.value= settings.mute_sfx?0:0.8; sfxGain.connect(master);
+            musicGain = ctx.createGain(); musicGain.gain.value=0.08; musicGain.connect(master);
+          }catch(e){ return null; }
+        }
+        return ctx;
+      };
+      const arm = ()=>{ if(armed) return; armed=true; if(ctx && ctx.state==='suspended') ctx.resume(); };
+
+      const blip = (freq=440, time=0.06, type='sine', vol=0.8) => {
+        if(settings.mute_all || settings.mute_sfx) return;
+        const ac = safeCtx(); if(!ac) return;
+        const o = ac.createOscillator(); const g = ac.createGain();
+        o.type = type; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, ac.currentTime);
+        g.gain.linearRampToValueAtTime(vol, ac.currentTime+0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+time);
+        o.connect(g); g.connect(sfxGain);
+        o.start(); o.stop(ac.currentTime + time + 0.02);
+      };
+      const click = (()=> {
+        let last=0;
+        return ()=> {
+          const now = performance.now();
+          if(now - last < 50) return; // rate-limit
+          last = now;
+          blip(520, 0.04, 'triangle', 0.5);
+        };
+      })();
+      const perfect = ()=> blip(880, 0.08, 'sine', 0.6);
+      const overheat = ()=> blip(160, 0.3, 'sawtooth', 0.6);
+      const eventWhoosh = ()=> blip(420, 0.25, 'sine', 0.4);
+
+      const startMusic = ()=>{
+        if(settings.mute_all) return;
+        const ac = safeCtx(); if(!ac) return;
+        if(musicOsc) return;
+        musicOsc = ac.createOscillator();
+        musicOsc.type='sine';
+        musicOsc.connect(musicGain);
+        musicOsc.start();
+        // Simple 2-note loop ~60-70 BPM
+        let step=0;
+        musicSeq = setInterval(()=> {
+          if(settings.mute_all){ stopMusic(); return;}
+          const f = (step%4===0)? 220 : (step%4===2? 196 : 174);
+          musicOsc.frequency.setTargetAtTime(f, ac.currentTime, 0.05);
+          step++;
+        }, 900);
+      };
+      const stopMusic = ()=>{
+        if(musicSeq){ clearInterval(musicSeq); musicSeq=null; }
+        if(musicOsc){ try{ musicOsc.stop(); }catch(e){} musicOsc.disconnect(); musicOsc=null; }
+      };
+      const applySettings = ()=>{
+        safeCtx();
+        if(sfxGain) sfxGain.gain.value = settings.mute_sfx || settings.mute_all ? 0 : 0.8;
+        if(settings.bgm && !settings.mute_all) startMusic(); else stopMusic();
+      };
+      return {arm, click, perfect, overheat, eventWhoosh, applySettings};
+    })();
+
+    // UI elements
+    const el = {
+      warpBtn: document.getElementById('warpBtn'),
+      stardust: document.getElementById('stardust'),
+      qkeys: document.getElementById('qkeys'),
+      heatPct: document.getElementById('heatPct'),
+      thrVal: document.getElementById('thrVal'),
+      heatFill: document.getElementById('heatFill'),
+      heatBar: document.getElementById('heatBar'),
+      safeZone: document.getElementById('safeZone'),
+      safeMarker: document.getElementById('safeMarker'),
+      comboVal: document.getElementById('comboVal'),
+      comboFill: document.getElementById('comboFill'),
+      perTap: document.getElementById('perTap'),
+      multVal: document.getElementById('multVal'),
+      critVal: document.getElementById('critVal'),
+      heatPerTap: document.getElementById('heatPerTap'),
+      shopList: document.getElementById('shopList'),
+      upgradesList: document.getElementById('upgradesList'),
+      achList: document.getElementById('achList'),
+      lockoutBadge: document.getElementById('lockoutBadge'),
+      wormholeBadge: document.getElementById('wormholeBadge'),
+      solarBadge: document.getElementById('solarBadge'),
+      surgeBadge: document.getElementById('surgeBadge'),
+      lifeVal: document.getElementById('lifeVal'),
+      prestigeGain: document.getElementById('prestigeGain'),
+      prestigeBtn: document.getElementById('prestigeBtn'),
+      // Toggles
+      muteAll: document.getElementById('muteAll'),
+      muteSfx: document.getElementById('muteSfx'),
+      bgmToggle: document.getElementById('bgmToggle'),
+      hcToggle: document.getElementById('hcToggle'),
+      lgToggle: document.getElementById('lgToggle'),
+      rmToggle: document.getElementById('rmToggle'),
+      resetBtn: document.getElementById('resetBtn')
+    };
+
+    // Apply settings to UI
+    function applySettingsToUI(){
+      document.body.classList.toggle('hc', !!settings.hc);
+      document.body.classList.toggle('lg', !!settings.lg);
+      document.body.classList.toggle('rm', !!settings.rm);
+      el.muteAll.checked = !!settings.mute_all;
+      el.muteSfx.checked = !!settings.mute_sfx;
+      el.bgmToggle.checked = !!settings.bgm;
+      el.hcToggle.checked = !!settings.hc;
+      el.lgToggle.checked = !!settings.lg;
+      el.rmToggle.checked = !!settings.rm;
+      Audio.applySettings();
+    }
+    applySettingsToUI();
+
+    // Economy calculations
+    function threshold(){
+      let t = state.thresholdBase;
+      if(state.upgrades["Overclock Safety I"]) t *= 1.10;
+      if(state.upgrades["Overclock Safety II"]) t *= 1.15;
+      return Math.round(t);
+    }
+    function basePerTap(){
+      let base = 1;
+      base += state.modules.TapAmplifier;
+      if(state.upgrades["Nano-Actuator I"]) base += 1;
+      if(state.upgrades["Nano-Actuator II"]) base += 3;
+      base += state.permanent.basePerTapBonus||0;
+      return base;
+    }
+    function globalMultiplier(){
+      let mult = 1;
+      mult *= (1 + 0.05 * state.modules.FluxCoil);
+      mult *= (1 + (state.permanent.tapMultBonus||0));
+      mult *= (1 + 0.05 * (state.quantumKeys||0));
+      if(state.firstRunBonusActive) mult *= 1.10;
+      if(isSurgeActive()) mult *= 1.25;
+      return mult;
+    }
+    function comboMultiplier(){
+      const base = 0.002;
+      const extra = state.upgrades["Binary Burst"] ? 0.005 : 0;
+      const per = base + extra;
+      const cap = 0.5;
+      return 1 + Math.min(cap, state.combo * per);
+    }
+    function critStats(){
+      let chance = 0 + (state.permanent.critChanceBonus||0);
+      let mult = 2.0;
+      if(state.upgrades["Crit Matrix I"]) chance += 0.03;
+      if(state.upgrades["Crit Matrix II"]) { chance += 0.05; mult = 2.2; }
+      chance = Math.min(0.5, chance);
+      return {chance, mult};
+    }
+    function safeZoneWidthRatio(){
+      let w = 0.20;
+      w += 0.02 * state.modules.QuantumCompressor;
+      if(state.upgrades["Pulse Stabilizer"]) w += 0.05;
+      if(state.permanent.safeZoneBonus) w += state.permanent.safeZoneBonus; // assigned by milestone
+      if(state.upgrades["Precision HUD"]) w += 0.05;
+      if(isSurgeActive()) w += 0.10;
+      w = clamp(w, 0.10, 0.80);
+      return w;
+    }
+    function heatPerTap(){
+      let h = 10;
+      h *= (1 - 0.03 * state.modules.InertiaMatrix);
+      if(state.upgrades["Thermal Paste MkII"]) h *= 0.9;
+      h = Math.max(2, h);
+      return h;
+    }
+    function isSurgeActive(){
+      return state.lastPrestigeTime && (Date.now() - state.lastPrestigeTime) < 30000;
+    }
+
+    function expectedPerTap(){
+      // expected crit factor
+      const crit = critStats();
+      const base = basePerTap();
+      const mult = globalMultiplier();
+      const combo = comboMultiplier();
+      const eventMult = (state.solarFlareTaps>0?2:1) * (state.wormholeActive?3:1);
+      const avgCrit = (1 + crit.chance * (crit.mult - 1));
+      return base * mult * combo * eventMult * avgCrit;
+    }
+
+    // UI Rendering
+    function render(){
+      // Resource
+      el.stardust.textContent = fmtNum(state.stardust);
+      el.qkeys.textContent = fmtInt(state.quantumKeys);
+
+      // Heat
+      const thr = threshold();
+      el.thrVal.textContent = fmtInt(thr);
+      const pct = Math.floor((state.heat / thr) * 100);
+      el.heatPct.textContent = clamp(pct,0,999) + "%";
+      el.heatFill.style.width = clamp((state.heat / thr) * 100, 0, 100) + "%";
+      document.body.parentElement.setAttribute('data-state-lockout', isLockedOut()? '1':'0');
+      el.lockoutBadge.classList.toggle('hidden', !isLockedOut());
+
+      // Safe zone visuals
+      const w = safeZoneWidthRatio();
+      const left = (0.5 - w/2) * 100;
+      const right = (0.5 + w/2) * 100;
+      el.safeZone.style.left = left+"%";
+      el.safeZone.style.right = (100-right)+"%";
+      el.safeMarker.style.opacity = state.upgrades["Precision HUD"] ? "1" : "0.2";
+
+      // Combo
+      el.comboVal.textContent = state.combo;
+      el.comboFill.style.width = clamp(state.combo/50, 0, 1)*100 + "%";
+
+      // Stats
+      el.perTap.textContent = fmtNum(expectedPerTap());
+      el.multVal.textContent = "x" + globalMultiplier().toFixed(2);
+      const cs = critStats();
+      el.critVal.textContent = Math.round(cs.chance*100) + "%";
+      el.heatPerTap.textContent = Math.round(heatPerTap());
+
+      // Event badges
+      document.body.parentElement.setAttribute('data-state-wormhole', state.wormholeActive ? '1':'0');
+      el.wormholeBadge.classList.toggle('hidden', !state.wormholeActive);
+      document.body.parentElement.setAttribute('data-state-solarflare', state.solarFlareTaps>0 ? '1':'0');
+      el.solarBadge.classList.toggle('hidden', !(state.solarFlareTaps>0));
+      el.surgeBadge.classList.toggle('hidden', !isSurgeActive());
+
+      // Prestige
+      el.lifeVal.textContent = fmtNum(state.totalLifetime);
+      const potentialKeys = Math.max(0, Math.floor(state.totalLifetime/100000) - (state.quantumKeys||0));
+      el.prestigeGain.textContent = fmtInt(potentialKeys);
+      el.prestigeBtn.disabled = !(state.prestigeUnlocked && potentialKeys>0);
+
+      // Refresh shop/upgrades availability
+      renderShop();
+      renderUpgrades();
+      renderAchievements();
+    }
+
+    // Shop rendering/buy
+    function moduleCost(key, level){
+      const spec = modulesSpec.find(m=>m.key===key);
+      return Math.floor(spec.base * Math.pow(spec.mult, level));
+    }
+    function renderShop(){
+      const frag = document.createDocumentFragment();
+      modulesSpec.forEach(mod=>{
+        const level = state.modules[mod.key]||0;
+        const cost = moduleCost(mod.key, level);
+        const unlocked = (state.totalLifetime >= mod.unlocked_at) || state.milestones["total_"+mod.unlocked_at];
+        const card = document.createElement('div');
+        card.className='card';
+        const title = document.createElement('div');
+        title.className='card__row';
+        const left = document.createElement('div');
+        left.innerHTML = `<div class="card__title">${mod.name} <span class="muted">Lv ${level}</span></div>
+                          <div class="muted">${mod.desc}</div>`;
+        const right = document.createElement('div');
+        const btn = document.createElement('button');
+        btn.className='btn';
+        btn.textContent = unlocked ? `Buy (${fmtNum(cost)})` : `Locked @ ${fmtNum(mod.unlocked_at)} lifetime`;
+        btn.disabled = !unlocked || state.stardust < cost;
+        btn.addEventListener('click', ()=>{
+          if(state.stardust >= cost){
+            state.stardust -= cost;
+            state.modules[mod.key]++;
+            Audio.click();
+            render(); saveState(true);
+          }
+        });
+        right.appendChild(btn);
+        title.appendChild(left); title.appendChild(right);
+        card.appendChild(title);
+        frag.appendChild(card);
+      });
+      el.shopList.innerHTML='';
+      el.shopList.appendChild(frag);
+    }
+
+    // Upgrades
+    function renderUpgrades(){
+      const frag = document.createDocumentFragment();
+      upgradesSpec.forEach(up=>{
+        const purchased = !!state.upgrades[up.name];
+        const card = document.createElement('div');
+        card.className='card';
+        const row = document.createElement('div');
+        row.className='card__row';
+        const left = document.createElement('div');
+        left.innerHTML = `<div class="card__title">${up.name}${purchased? ' <span class="muted">[Owned]</span>':''}</div>
+                          <div class="muted">${up.effect}</div>`;
+        const right = document.createElement('div');
+        const btn = document.createElement('button');
+        btn.className='btn';
+        btn.textContent = purchased? 'Purchased' : `Buy (${fmtNum(up.cost)})`;
+        btn.disabled = purchased || state.stardust < up.cost;
+        btn.addEventListener('click', ()=>{
+          if(purchased) return;
+          if(state.stardust >= up.cost){
+            state.stardust -= up.cost;
+            state.upgrades[up.name] = true;
+            applyUpgradeImmediateEffects(up.name);
+            Audio.click();
+            render(); saveState(true);
+          }
+        });
+        right.appendChild(btn);
+        row.appendChild(left); row.appendChild(right);
+        card.appendChild(row);
+        frag.appendChild(card);
+      });
+      el.upgradesList.innerHTML='';
+      el.upgradesList.appendChild(frag);
+    }
+    function applyUpgradeImmediateEffects(name){
+      // For upgrades that grant persistent/per-run bonuses immediately, we've already covered in formulas.
+      // Nothing to do right now beyond rendering.
+    }
+
+    // Achievements
+    function renderAchievements(){
+      const frag = document.createDocumentFragment();
+      milestonesSpec.forEach(ms=>{
+        const achieved = !!state.milestones["total_"+ms.at_total];
+        const card = document.createElement('div');
+        card.className='card';
+        const row = document.createElement('div');
+        row.className='card__row';
+        row.innerHTML = `<div>
+          <div class="card__title">Total ${fmtNum(ms.at_total)}</div>
+          <div class="muted">${ms.reward}</div>
+        </div>
+        <div>${achieved? '<span class="badge">Unlocked</span>':'<span class="badge">Locked</span>'}</div>`;
+        card.appendChild(row);
+        frag.appendChild(card);
+      });
+      el.achList.innerHTML=''; el.achList.appendChild(frag);
+    }
+
+    // Events scheduling
+    function scheduleNextWormhole(){
+      const min = 90000, max = 120000;
+      const wait = Math.floor(min + Math.random()*(max-min));
+      state.nextWormholeAt = Date.now() + wait;
+      if(scheduleNextWormhole._t) clearTimeout(scheduleNextWormhole._t);
+      scheduleNextWormhole._t = setTimeout(()=> {
+        openWormholeWindow();
+      }, wait);
+    }
+    function openWormholeWindow(){
+      const baseWin = 5000;
+      const mul = state.upgrades["Flux Sync"]? 1.3 : 1;
+      state.wormholeActive = true;
+      state.wormholeWindowEnd = Date.now() + Math.floor(baseWin * mul);
+      state.wormholeTapsUsed = 0;
+      Audio.eventWhoosh();
+      render();
+      if(openWormholeWindow._t) clearTimeout(openWormholeWindow._t);
+      openWormholeWindow._t = setTimeout(()=> {
+        state.wormholeActive = false;
+        state.wormholeTapsUsed = 0;
+        render();
+        scheduleNextWormhole();
+      }, baseWin * mul);
+    }
+
+    function isLockedOut(){
+      return Date.now() < state.overheatLockoutUntil;
+    }
+
+    // Core tap handling
+    function onTap(){
+      if(isLockedOut()) return;
+      state.totalClicks++;
+      const thr = threshold();
+      // Determine perfect burn by position within safe zone
+      const ratio = state.heat / thr;
+      const w = safeZoneWidthRatio();
+      const perfect = (Math.abs(ratio - 0.5) <= (w/2));
+      // Heat delta
+      let heatDelta = heatPerTap();
+      if(state.solarFlareTaps>0) heatDelta *= 0.5; // solar flare halves heat gain
+      state.heat += heatDelta;
+      if(perfect){
+        // small heat reduction
+        state.heat -= thr * 0.05;
+      }
+      state.heat = Math.max(0, state.heat);
+
+      // Calculate tap gain
+      let gain = basePerTap();
+      // Perfect burn bonus
+      if(perfect) gain *= 1.5;
+      // Combo
+      if(perfect){
+        state.combo++;
+        // Solar Flare trigger
+        if(state.combo===50 && state.solarFlareTaps<=0){
+          state.solarFlareTaps = 10;
+          Audio.eventWhoosh();
+        }
+      }else{
+        state.combo = 0;
+      }
+      // Events multiplicative bonuses
+      if(state.solarFlareTaps>0){ gain *= 2; state.solarFlareTaps--; }
+      if(state.wormholeActive && Date.now() < state.wormholeWindowEnd && state.wormholeTapsUsed < 5){
+        gain *= 3;
+        state.wormholeTapsUsed++;
+      }
+
+      // Global multipliers
+      gain *= globalMultiplier();
+      gain *= comboMultiplier();
+
+      // Crit check
+      const cs = critStats();
+      if(Math.random() < cs.chance){
+        gain *= cs.mult;
+      }
+
+      // Apply
+      gain = Math.max(0, gain);
+      state.stardust += gain;
+      state.totalLifetime += gain;
+
+      // Overheat check
+      if(state.heat >= thr){
+        // Overheat event
+        state.combo = 0;
+        const baseMs = 2000;
+        let ms = baseMs;
+        if(state.upgrades["Quantum Grease"]) ms *= 0.75;
+        if(state.permanent.cooldownReduction) ms *= (1 - state.permanent.cooldownReduction);
+        state.overheatLockoutUntil = Date.now() + ms;
+        state.heat = thr * 0.5;
+        Audio.overheat();
+      }else{
+        // Normal SFX
+        if(perfect) Audio.perfect(); else Audio.click();
+      }
+
+      checkMilestones();
+      render();
+      saveState(true);
+    }
+
+    // Milestones check and apply rewards
+    function checkMilestones(){
+      milestonesSpec.forEach(ms=>{
+        if(!state.milestones["total_"+ms.at_total] && state.totalLifetime >= ms.at_total){
+          state.milestones["total_"+ms.at_total] = true;
+          // Apply rewards
+          switch(ms.at_total){
+            case 1000:
+              state.permanent.tapMultBonus = (state.permanent.tapMultBonus||0) + 0.05;
+              break;
+            case 10000:
+              state.permanent.safeZoneBonus = (state.permanent.safeZoneBonus||0) + 0.01;
+              break;
+            case 50000:
+              state.permanent.basePerTapBonus = (state.permanent.basePerTapBonus||0) + 1;
+              break;
+            case 100000:
+              state.prestigeUnlocked = true;
+              if(!state.lastPrestigeTime){ state.firstRunBonusActive = true; }
+              break;
+            case 250000:
+              state.permanent.cooldownReduction = Math.max(state.permanent.cooldownReduction||0, 0.20);
+              break;
+            case 1000000:
+              state.permanent.critChanceBonus = (state.permanent.critChanceBonus||0) + 0.02;
+              break;
+          }
+        }
+      });
+    }
+
+    // Prestige
+    function doPrestige(){
+      const potential = Math.max(0, Math.floor(state.totalLifetime/100000) - (state.quantumKeys||0));
+      if(!state.prestigeUnlocked || potential<=0) return;
+      state.quantumKeys += potential;
+      // Reset run-specific progress
+      state.stardust = 0;
+      state.combo = 0;
+      state.heat = 0;
+      state.modules = {TapAmplifier:0, FluxCoil:0, QuantumCompressor:0, InertiaMatrix:0};
+      Object.keys(state.upgrades).forEach(k=>state.upgrades[k]=false);
+      state.overheatLockoutUntil = 0;
+      state.solarFlareTaps = 0;
+      state.wormholeActive = false;
+      state.wormholeTapsUsed = 0;
+      state.wormholeWindowEnd = 0;
+      state.nextWormholeAt = 0;
+      state.firstRunBonusActive = false; // consumed on first prestige
+      state.lastPrestigeTime = Date.now();
+      state.runStart = Date.now();
+      scheduleNextWormhole();
+      Audio.eventWhoosh();
+      render(); saveState(false);
+    }
+
+    // Input
+    el.warpBtn.addEventListener('pointerdown', ()=>{ Audio.arm(); onTap(); });
+    el.warpBtn.addEventListener('click', (e)=> e.preventDefault()); // avoid double on some browsers
+    window.addEventListener('keydown', (e)=>{
+      if(e.code==='Space' || e.code==='Enter'){
+        e.preventDefault();
+        Audio.arm();
+        onTap();
+      }
+    });
+
+    // Settings events
+    el.muteAll.addEventListener('change', ()=>{ settings.mute_all = el.muteAll.checked; saveSettings(); Audio.applySettings(); });
+    el.muteSfx.addEventListener('change', ()=>{ settings.mute_sfx = el.muteSfx.checked; saveSettings(); Audio.applySettings(); });
+    el.bgmToggle.addEventListener('change', ()=>{ settings.bgm = el.bgmToggle.checked; saveSettings(); Audio.applySettings(); });
+    el.hcToggle.addEventListener('change', ()=>{ settings.hc = el.hcToggle.checked; applySettingsToUI(); saveSettings(); });
+    el.lgToggle.addEventListener('change', ()=>{ settings.lg = el.lgToggle.checked; applySettingsToUI(); saveSettings(); });
+    el.rmToggle.addEventListener('change', ()=>{ settings.rm = el.rmToggle.checked; applySettingsToUI(); saveSettings(); });
+    el.resetBtn.addEventListener('click', ()=>{
+      if(confirm('Reset all progress? This cannot be undone.')){
+        localStorage.removeItem(SAVE_KEY);
+        location.reload();
+      }
+    });
+    el.prestigeBtn.addEventListener('click', doPrestige);
+
+    // Init panels
+    renderShop();
+    renderUpgrades();
+    renderAchievements();
+
+    // Wormhole timer
+    scheduleNextWormhole();
+
+    // Passive UI updater for lockout and wormhole
+    setInterval(()=>{
+      // Auto close wormhole if time passed (safety)
+      if(state.wormholeActive && Date.now()>state.wormholeWindowEnd){
+        state.wormholeActive = false; state.wormholeTapsUsed = 0; scheduleNextWormhole();
+      }
+      render();
+    }, 200);
+
+    // Initial render and milestone check
+    checkMilestones();
+    render();
+
+  })();
+  </script>
+</body>
+</html>
