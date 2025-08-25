@@ -2,10 +2,16 @@ name: Deploy static site
 on:
   push:
     branches: [ main ]
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   deploy:
     environment:
@@ -14,8 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Upload the site artifact (MUST include your root index.html)
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: .   # repo root with index.html and games/
+
+      # Create/activate the deployment
       - id: deployment
         uses: actions/deploy-pages@v4
