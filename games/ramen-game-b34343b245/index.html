@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en" data-state="init">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ramen Rush: After the Fallout</title>
+<style>
+  :root{
+    --bg:#1F1F1F;
+    --text:#EDEDED;
+    --muted:#BFBFBF;
+    --accent:#00C08B; /* jade */
+    --accent-2:#FF2D95; /* neon pink */
+    --panel:#242424;
+    --btn:#2A2A2A;
+    --ok:#00C08B;
+    --warn:#FFAA2D;
+    --err:#FF5A6B;
+    --focus:#FF2D95;
+    --shadow:0 6px 20px rgba(0,0,0,0.35);
+    --radius:14px;
+    --speed:120ms;
+    --font:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+    --size-1:0.9rem;
+    --size-2:1rem;
+    --size-3:1.1rem;
+    --size-4:1.25rem;
+    --size-5:1.6rem;
+    --size-6:2rem;
+  }
+  @media (prefers-reduced-motion: reduce){
+    :root{ --speed:0ms; }
+    .anim,*{ animation:none!important; transition:none!important }
+  }
+  /* High contrast modifier */
+  .high-contrast{
+    --bg:#000;
+    --text:#FFF;
+    --panel:#000;
+    --btn:#000;
+    --accent:#00F0B0;
+    --accent-2:#FF42A8;
+    --shadow:none;
+    --focus:#FFD400;
+  }
+  /* Large text modifier */
+  .large-text{
+    font-size:18px;
+  }
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:var(--font);
+    background: radial-gradient(1200px 800px at 110% -10%, rgba(255,45,149,0.08), transparent 40%),
+               radial-gradient(800px 600px at -10% 110%, rgba(0,192,139,0.08), transparent 40%),
+               var(--bg);
+    color:var(--text);
+    line-height:1.4;
+  }
+  header{
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0));
+    backdrop-filter:saturate(1.2) blur(4px);
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px; padding:10px 12px;
+  }
+  .caps{
+    display:flex; align-items:baseline; gap:8px; font-weight:700;
+  }
+  .caps__value{
+    font-size:var(--size-5);
+    color:var(--accent-2);
+    text-shadow:0 0 8px rgba(255,45,149,0.35);
+  }
+  .caps small{color:var(--muted)}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .btn{
+    appearance:none; border:1px solid #333; background:var(--btn); color:var(--text);
+    padding:8px 12px; border-radius:10px; cursor:pointer; box-shadow:var(--shadow);
+    transition:transform var(--speed), box-shadow var(--speed), background var(--speed), border-color var(--speed);
+    font-weight:600; font-size:var(--size-2);
+  }
+  .btn[disabled]{opacity:.5; cursor:not-allowed; filter:grayscale(0.3)}
+  .btn:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+  .btn--pill{border-radius:999px; padding:8px 14px}
+  .btn--accent{background:linear-gradient(180deg, #2f2f2f, #222); border-color:#3a3a3a}
+  .btn--accent:hover{transform:translateY(-1px); box-shadow:0 10px 26px rgba(255,45,149,0.2)}
+  .btn--good{background:linear-gradient(180deg, #1e3b36,#142a26); border-color:#275a51}
+  .btn--warn{background:linear-gradient(180deg, #3b2e1e,#2a2118); border-color:#5a4527}
+
+  main{padding:12px; max-width:960px; margin:0 auto}
+  .primary{
+    display:flex; flex-direction:column; align-items:center; gap:10px; margin:8px 0 14px;
+  }
+  .bowl{
+    width:min(80vw, 360px); height:min(80vw, 360px); max-width:92vh; max-height:92vh;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.06);
+    background:
+      radial-gradient(circle at 55% 45%, rgba(255,45,149,0.25), transparent 40%),
+      radial-gradient(circle at 50% 55%, rgba(0,192,139,0.25), transparent 42%),
+      conic-gradient(from 180deg at 50% 50%, rgba(255,45,149,0.18), rgba(0,192,139,0.18), rgba(255,45,149,0.18));
+    position:relative;
+    box-shadow:0 0 0 2px rgba(255,45,149,0.25) inset, 0 20px 50px rgba(0,0,0,0.45);
+    display:flex; align-items:center; justify-content:center;
+    font-size:var(--size-6); font-weight:800; color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,0.5), 0 0 8px rgba(255,45,149,0.5);
+    user-select:none;
+  }
+  .bowl::after{
+    content:"🍜";
+    position:absolute; font-size:calc(min(24vw, 110px)); filter:drop-shadow(0 8px 8px rgba(0,0,0,0.45));
+    transition:transform var(--speed);
+  }
+  .bowl.btn--wide{transform-origin:center; }
+  .bowl:active{transform:scale(.98)}
+  .pulse{animation:pulse 120ms ease-out}
+  @keyframes pulse{ 0%{transform:scale(1)} 70%{transform:scale(0.98)} 100%{transform:scale(1)} }
+  .bowl .badge{
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    font-size:var(--size-3); color:var(--accent); text-shadow:0 0 8px rgba(0,192,139,0.6);
+  }
+  .bowl .rush{
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    background:rgba(0,192,139,0.15); border:1px solid rgba(0,192,139,0.45); border-radius:999px;
+    padding:2px 8px; font-size:var(--size-1); color:var(--accent);
+  }
+  .grid{
+    display:grid; gap:8px; grid-template-columns:repeat(2, 1fr);
+  }
+  @media(min-width:480px){ .grid{grid-template-columns:repeat(3, 1fr)} }
+  .stat{
+    background:var(--panel); border:1px solid #303030; border-radius:var(--radius); padding:10px 12px;
+  }
+  .stat b{display:block; color:var(--muted); font-size:var(--size-1); font-weight:600}
+  .stat span{font-size:var(--size-3); font-weight:700}
+  .section{
+    margin:16px 0; padding:10px; background:var(--panel); border:1px solid #303030; border-radius:var(--radius);
+  }
+  .section h2{margin:0 0 10px; font-size:var(--size-4)}
+  .list{display:flex; flex-direction:column; gap:8px}
+  .item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:#1b1b1b; border:1px solid #2d2d2d; border-radius:12px; padding:8px;
+  }
+  .item.locked{opacity:.6; filter:saturate(0.3)}
+  .item__meta{display:flex; flex-direction:column; gap:2px}
+  .item__name{font-weight:700}
+  .item__desc{font-size:var(--size-1); color:var(--muted)}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{
+    border:1px dashed #3d3d3d; padding:2px 6px; border-radius:999px; color:var(--muted); font-size:var(--size-1)
+  }
+  details.panel{
+    background:var(--panel); border:1px solid #303030; border-radius:var(--radius); padding:6px 8px; margin:12px 0;
+  }
+  .panel > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:6px 4px; font-weight:700; font-size:var(--size-3);
+  }
+  .panel > summary::-webkit-details-marker{display:none}
+  .panel__body{padding:6px 0 8px}
+  .tiny{font-size:var(--size-1); color:var(--muted)}
+  footer{
+    padding:12px; text-align:center; color:var(--muted);
+  }
+  .kbd{background:#111; border:1px solid #333; padding:0 6px; border-radius:6px; font-weight:700}
+  .muters{display:flex; gap:8px; align-items:center}
+  .sidenote{color:var(--muted); font-size:var(--size-1)}
+  .credits a{color:var(--accent-2); text-decoration:none}
+  .row{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+  .grow{flex:1}
+  .right{margin-left:auto}
+
+  /* Event colors */
+  .is-rush .bowl{box-shadow:0 0 0 4px rgba(0,192,139,0.35) inset, 0 0 32px rgba(0,192,139,0.25)}
+  .is-spicy .bowl{box-shadow:0 0 0 4px rgba(255,45,149,0.35) inset, 0 0 38px rgba(255,45,149,0.3)}
+  .is-influencer .bowl::after{transform:rotate(-8deg)}
+  /* Focus outlines for links and details summary */
+  a:focus-visible, summary:focus-visible{outline:2px solid var(--focus); outline-offset:3px; border-radius:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar" role="banner">
+    <div class="caps" aria-live="polite" aria-atomic="true">
+      <div>
+        <div class="caps__value" id="capsValue">0</div>
+        <small>Caps</small>
+      </div>
+      <div class="chips">
+        <span class="chip">Shards: <b id="shardValue">0</b></span>
+        <span class="chip" id="tapValueChip">+1/tap</span>
+      </div>
+    </div>
+    <div class="toolbar" role="toolbar" aria-label="Settings and Audio">
+      <button class="btn btn--pill" id="btnSettings" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
+      <div class="muters">
+        <button class="btn btn--pill" id="btnMuteSFX" aria-pressed="false" title="Toggle SFX">SFX</button>
+        <button class="btn btn--pill" id="btnMuteAll" aria-pressed="false" title="Toggle All Sound">Mute</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="primary">
+    <button class="bowl btn btn--accent" id="tapBtn" aria-label="Serve ramen to earn Caps" title="Tap to serve ramen (Space/Enter)">
+      <div class="rush" id="rushBadge" hidden>Rush Hour</div>
+      <div class="badge" id="critBadge" hidden>CRIT ×3</div>
+    </button>
+    <div class="row" style="width:100%; max-width:520px;">
+      <div class="grow tiny">Rush meter: <b id="rushMeter">0/25</b> in 8s</div>
+      <div class="tiny right" id="eventChips" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="statsTitle">
+    <h2 id="statsTitle">Stats</h2>
+    <div class="grid" id="stats">
+      <div class="stat"><b>Per Tap</b><span id="statPerTap">1</span></div>
+      <div class="stat"><b>Taps/s</b><span id="statTPS">0</span></div>
+      <div class="stat"><b>Crit Chance</b><span id="statCrit">0%</span></div>
+      <div class="stat"><b>Total Taps</b><span id="statTaps">0</span></div>
+      <div class="stat"><b>Lifetime Caps</b><span id="statLife">0</span></div>
+      <div class="stat"><b>Multipliers</b><span id="statMult">1.0×</span></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="upgradesTitle">
+    <h2 id="upgradesTitle">Upgrades & Gear</h2>
+    <div class="list" id="upgradeList" role="list"></div>
+  </section>
+
+  <details id="shopPanel" class="panel" open>
+    <summary>Shop: Presses & Tools <span class="sidenote">(boost tap value)</span></summary>
+    <div class="panel__body">
+      <div class="list" id="shopList" role="list"></div>
+    </div>
+  </details>
+
+  <details id="achPanel" class="panel" open>
+    <summary>Achievements & Milestones</summary>
+    <div class="panel__body" id="achList" role="list">
+      <!-- populated -->
+    </div>
+  </details>
+
+  <details id="settingsPanel" class="panel" hidden>
+    <summary>Settings</summary>
+    <div class="panel__body">
+      <div class="list">
+        <div class="item">
+          <div class="item__meta"><div class="item__name">High Contrast</div><div class="item__desc">Improves visual contrast and outlines.</div></div>
+          <button class="btn" id="toggleHC">Toggle</button>
+        </div>
+        <div class="item">
+          <div class="item__meta"><div class="item__name">Large Text</div><div class="item__desc">Increase base font size.</div></div>
+          <button class="btn" id="toggleLT">Toggle</button>
+        </div>
+        <div class="item">
+          <div class="item__meta"><div class="item__name">Reduce Motion</div><div class="item__desc">Disable non-essential animations.</div></div>
+          <button class="btn" id="toggleRM">Toggle</button>
+        </div>
+        <div class="item">
+          <div class="item__meta"><div class="item__name">Audio: SFX Only Mute</div><div class="item__desc">Mute sound effects only.</div></div>
+          <button class="btn" id="toggleSFXOnly">Toggle</button>
+        </div>
+        <div class="item">
+          <div class="item__meta"><div class="item__name">Audio: Mute All</div><div class="item__desc">Silence everything.</div></div>
+          <button class="btn" id="toggleMuteAll">Toggle</button>
+        </div>
+        <div class="item">
+          <div class="item__meta"><div class="item__name">Prestige: Convert to Recipe Shards</div><div class="item__desc">Reset Caps, tools, and upgrades. Keep achievements and settings. Gain shards from lifetime Caps.</div></div>
+          <button class="btn btn--good" id="btnPrestige" disabled>Prestige</button>
+        </div>
+        <div class="item">
+          <div class="item__meta"><div class="item__name">Hard Reset</div><div class="item__desc">Erase progress (keeps settings). Cannot be undone.</div></div>
+          <button class="btn btn--warn" id="btnReset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <section class="section" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">Help / About</h2>
+    <p class="tiny">
+      Ramen Rush: After the Fallout — Tap the neon bowl to serve ramen and earn Caps fast.
+      Stack upgrades and tools to boost each tap, trigger rushes by tapping fast, and snipe crits.
+      Prestige to bank Recipe Shards that permanently juice your taps. No idle timers. All offline.
+    </p>
+    <ul class="tiny">
+      <li>Rush Hour: 25 taps in 8s → 2x taps for 10s (13s with Afterglow Sign)</li>
+      <li>Influencer Sighting: Every 200 taps → next 15 taps +10 Caps</li>
+      <li>Spicy Surge: Double-tap within 300ms → 2s of guaranteed crits (×3)</li>
+      <li>Controls: Click/tap or press <span class="kbd">Space</span>/<span class="kbd">Enter</span></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="credits tiny">
+    <span>Ramen Rush: After the Fallout · v1.0.0</span> · <span>Palette: charcoal, jade, neon pink</span>
+  </div>
+</footer>
+
+<div class="tiny" id="ariaLive" aria-live="polite" aria-atomic="true" style="position:absolute;left:-9999px;top:auto;opacity:0;">Ready</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // Version and Keys
+  const VERSION = '1.0.0';
+  const SAVE_KEY = 'save_v1';
+  const SETTINGS_KEY = 'settings_v1';
+  const SAVE_INTERVAL = 10000;
+
+  // Economy: definitions
+  const BASE_PER_CLICK = 1;
+  const GENERATORS = [
+    { id:'hand', name:'Hand-Crank Noodle Press', base:50, growth:1.5, add:1, unlocked_at:20, desc:'+1 Cap per tap' },
+    { id:'glow', name:'Glow Ladle', base:250, growth:1.6, add:3, unlocked_at:200, desc:'+3 Caps per tap' },
+    { id:'jade', name:'Jade Counter Weights', base:1000, growth:1.7, add:5, unlocked_at:1000, desc:'+5 Caps per tap' },
+  ];
+  const UPGRADES = [
+    { id:'nori', name:'Extra Nori', cost:10, type:'add', add:1, desc:'+1 Cap per tap', one:true },
+    { id:'neon', name:'Neon Menu', cost:50, type:'mult', mult:1.2, desc:'x1.2 tap value', one:true },
+    { id:'grip', name:'Wide Bowl Grip', cost:120, type:'add', add:2, desc:'Larger hitbox +2 Caps per tap', one:true },
+    { id:'spicy', name:'Spicy Bomb', cost:250, type:'crit', crit:0.05, desc:'5% chance to triple tap reward', one:true },
+    { id:'jadebowl', name:'Jade Bowl Set', cost:1000, type:'mult', mult:1.5, desc:'x1.5 tap value', one:true },
+    { id:'afterglow', name:'Afterglow Sign', cost:2000, type:'rush', rushExtra:3000, desc:'Rush Hour lasts +3s', one:true },
+  ];
+  const MILESTONES = [
+    { at:100, id:'m100', text:'+1 Cap per tap (permanent bonus)' },
+    { at:500, id:'m500', text:'Unlocks Rush Hour event trigger' },
+    { at:2000, id:'m2000', text:'+5% crit chance for taps' },
+    { at:10000, id:'m10000', text:'Prestige option unlocked' },
+  ];
+  // Events config
+  const EVENTS = {
+    rush: { name:'Rush Hour', tapsRequired:25, windowMs:8000, baseDuration:10000 },
+    influencer: { name:'Influencer Sighting', tapsStep:200, bonusPerTap:10, taps:15 },
+    spicy: { name:'Spicy Surge', doubleTapMs:300, duration:2000 }
+  };
+
+  // Reducers/State
+  const defaultState = () => ({
+    caps: 0,
+    lifetime: 0,
+    shards: 0,
+    taps: 0,
+    upgrades: Object.fromEntries(UPGRADES.map(u => [u.id, false])),
+    generators: Object.fromEntries(GENERATORS.map(g => [g.id, 0])),
+    milestones: Object.fromEntries(MILESTONES.map(m => [m.id, false])),
+    events: {
+      rushUntil: 0,
+      influencerRemaining: 0,
+      spicyUntil: 0,
+    },
+    meta: {
+      recentTaps: [], // timestamps for 8s window & TPS
+      lastTapAt: 0,
+      lastCrits: [], // booleans, last 50
+    }
+  });
+
+  const defaultSettings = () => ({
+    high_contrast: false,
+    large_text: false,
+    reduced_motion: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches || false,
+    mute_all: false,
+    mute_sfx_only: false
+  });
+
+  let state = defaultState();
+  let settings = defaultSettings();
+  let dirty = false;
+  let uiUpdateScheduled = false;
+
+  // Audio
+  const Audio = (() => {
+    let ctx = null, enabled = false, lastPlay = {};
+    function init(){
+      if (settings.mute_all) return;
+      try{
+        if(!ctx){
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if(!AC) return;
+          ctx = new AC();
+          enabled = true;
+        }
+      }catch(e){ enabled = false; }
+    }
+    function time(){ return ctx ? ctx.currentTime : 0; }
+    function limiter(id, minGap=0.05){
+      const now=time();
+      if(!lastPlay[id] || now - lastPlay[id] > minGap){ lastPlay[id]=now; return true; }
+      return false;
+    }
+    function envGain(g, times){
+      const now = time();
+      const [attack, decay, sustain, release] = times;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.15, now + attack);
+      g.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+      return (stopAt) => {
+        const t = stopAt || time();
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0.0001, t + release);
+      };
+    }
+    function play(type='click'){
+      if (settings.mute_all) return;
+      if (settings.mute_sfx_only) return;
+      if(!enabled) return;
+      if(!limiter(type)) return;
+      const now = time();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      let freq = 400; let dur = 0.08;
+      let shape = 'sine';
+      if(type==='click'){ freq=420; dur=0.06; shape='triangle'; }
+      if(type==='buy'){ freq=240; dur=0.12; shape='sine'; }
+      if(type==='crit'){ freq=760; dur=0.12; shape='square'; }
+      if(type==='slurp'){ freq=180; dur=0.2; shape='sawtooth'; }
+      osc.type = shape;
+      osc.frequency.setValueAtTime(freq, now);
+      const stopEnv = envGain(gain, [0.005,0.04,0.03,0.06]);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      stopEnv(now + dur);
+      osc.stop(now + dur + 0.12);
+    }
+    function resume(){
+      if(!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    }
+    function suspend(){
+      if(!ctx) return;
+      if (ctx.state === 'running') ctx.suspend().catch(()=>{});
+    }
+    return { init, play, resume, suspend };
+  })();
+
+  // Storage
+  function load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(raw){
+        const s = JSON.parse(raw);
+        state = Object.assign(defaultState(), s);
+        // ensure data shape
+        for(const u of UPGRADES) if(typeof state.upgrades[u.id] !== 'boolean') state.upgrades[u.id] = false;
+        for(const g of GENERATORS) if(typeof state.generators[g.id] !== 'number') state.generators[g.id] = 0;
+        for(const m of MILESTONES) if(typeof state.milestones[m.id] !== 'boolean') state.milestones[m.id] = false;
+        if(!state.events) state.events = defaultState().events;
+        if(!state.meta) state.meta = defaultState().meta;
+      }
+    }catch(e){}
+    try{
+      const rawS = localStorage.getItem(SETTINGS_KEY);
+      if(rawS){
+        const s = JSON.parse(rawS);
+        settings = Object.assign(defaultSettings(), s);
+      }
+    }catch(e){}
+  }
+  function save(force=false){
+    if(!dirty && !force) return;
+    try{
+      const toSave = {...state};
+      // do not persist heavy arrays sizes
+      toSave.meta = {
+        recentTaps: state.meta.recentTaps.slice(-60),
+        lastTapAt: state.meta.lastTapAt || 0,
+        lastCrits: state.meta.lastCrits.slice(-50)
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(toSave));
+      dirty = false;
+    }catch(e){}
+  }
+  function saveSettings(){
+    try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){}
+  }
+  setInterval(()=>save(false), SAVE_INTERVAL);
+  window.addEventListener('beforeunload', ()=>{ save(true); });
+
+  // Helpers
+  const $ = sel => document.querySelector(sel);
+  const el = {
+    capsValue: $('#capsValue'),
+    shardValue: $('#shardValue'),
+    tapBtn: $('#tapBtn'),
+    rushBadge: $('#rushBadge'),
+    critBadge: $('#critBadge'),
+    rushMeter: $('#rushMeter'),
+    tapValueChip: $('#tapValueChip'),
+    statPerTap: $('#statPerTap'),
+    statTPS: $('#statTPS'),
+    statCrit: $('#statCrit'),
+    statTaps: $('#statTaps'),
+    statLife: $('#statLife'),
+    statMult: $('#statMult'),
+    upgradeList: $('#upgradeList'),
+    shopList: $('#shopList'),
+    achList: $('#achList'),
+    settingsPanel: $('#settingsPanel'),
+    btnSettings: $('#btnSettings'),
+    btnPrestige: $('#btnPrestige'),
+    btnReset: $('#btnReset'),
+    btnMuteAll: $('#btnMuteAll'),
+    btnMuteSFX: $('#btnMuteSFX'),
+    toggleHC: $('#toggleHC'),
+    toggleLT: $('#toggleLT'),
+    toggleRM: $('#toggleRM'),
+    toggleSFXOnly: $('#toggleSFXOnly'),
+    toggleMuteAll: $('#toggleMuteAll'),
+    eventChips: $('#eventChips'),
+    ariaLive: $('#ariaLive'),
+  };
+
+  function format(n){ return Math.floor(n).toLocaleString(); }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function now(){ return performance.now(); }
+
+  // Economy calculations
+  function genAdditive(){
+    let add = 0;
+    // fixed upgrades
+    if(state.upgrades.nori) add += 1;
+    if(state.upgrades.grip) add += 2;
+    // generators
+    add += state.generators.hand * 1;
+    add += state.generators.glow * 3;
+    add += state.generators.jade * 5;
+    // milestones
+    if(state.milestones.m100) add += 1;
+    return add;
+  }
+  function multBase(){
+    let m = 1;
+    if(state.upgrades.neon) m *= 1.2;
+    if(state.upgrades.jadebowl) m *= 1.5;
+    // events
+    if(isRushActive()) m *= 2;
+    // prestige shards
+    m *= (1 + 0.1 * (state.shards || 0));
+    return m;
+  }
+  function critChance(){
+    let c = 0;
+    if(state.upgrades.spicy) c += 0.05;
+    if(state.milestones.m2000) c += 0.05;
+    return c;
+  }
+  function isRushActive(){ return state.events.rushUntil > performance.now(); }
+  function isSpicyActive(){ return state.events.spicyUntil > performance.now(); }
+  function influencerActive(){ return state.events.influencerRemaining > 0; }
+  function perTapPreview(){
+    const add = genAdditive();
+    const infl = 0; // preview excludes influencer random buffs
+    const m = multBase();
+    const base = BASE_PER_CLICK + add + infl;
+    const value = base * m;
+    return Math.max(1, Math.floor(value));
+  }
+  function generatorCost(genId){
+    const g = GENERATORS.find(x=>x.id===genId);
+    const n = state.generators[genId] || 0;
+    const cost = g.base * Math.pow(g.growth, n);
+    return Math.floor(cost);
+  }
+
+  // UI building
+  function buildUpgrades(){
+    el.upgradeList.innerHTML = '';
+    for(const u of UPGRADES){
+      const bought = !!state.upgrades[u.id];
+      const div = document.createElement('div');
+      div.className='item';
+      div.setAttribute('role','listitem');
+      const meta = document.createElement('div');
+      meta.className='item__meta';
+      const name = document.createElement('div');
+      name.className='item__name';
+      name.textContent = u.name;
+      const desc = document.createElement('div');
+      desc.className='item__desc';
+      desc.textContent = u.desc + ' · Cost: ' + format(u.cost) + ' Caps';
+      meta.appendChild(name); meta.appendChild(desc);
+      const btn = document.createElement('button');
+      btn.className='btn';
+      btn.textContent = bought ? 'Purchased' : 'Buy';
+      btn.disabled = bought || state.caps < u.cost;
+      btn.addEventListener('click', ()=>{
+        tryBuyUpgrade(u.id);
+      });
+      div.appendChild(meta); div.appendChild(btn);
+      el.upgradeList.appendChild(div);
+    }
+  }
+  function buildShop(){
+    el.shopList.innerHTML = '';
+    for(const g of GENERATORS){
+      const locked = (state.lifetime < g.unlocked_at); // unlock by lifetime caps
+      const div = document.createElement('div');
+      div.className='item' + (locked ? ' locked' : '');
+      div.setAttribute('role','listitem');
+      const meta = document.createElement('div');
+      meta.className='item__meta';
+      const name = document.createElement('div');
+      name.className='item__name';
+      name.textContent = g.name + ' — x' + (state.generators[g.id]||0);
+      const desc = document.createElement('div');
+      desc.className='item__desc';
+      const cost = generatorCost(g.id);
+      desc.textContent = g.desc + ' · Next: ' + format(cost) + ' Caps';
+      meta.appendChild(name); meta.appendChild(desc);
+      const btn = document.createElement('button');
+      btn.className='btn';
+      btn.textContent = locked ? 'Locked' : 'Buy';
+      btn.disabled = locked || state.caps < cost;
+      btn.addEventListener('click', ()=>{ tryBuyGenerator(g.id); });
+      div.appendChild(meta); div.appendChild(btn);
+      el.shopList.appendChild(div);
+    }
+  }
+  function buildAchievements(){
+    const html = [];
+    html.push('<div class="list">');
+    for(const m of MILESTONES){
+      const ok = !!state.milestones[m.id];
+      html.push('<div class="item" role="listitem" aria-live="polite">');
+      html.push('<div class="item__meta"><div class="item__name">Milestone: ' + format(m.at) + ' lifetime Caps</div>');
+      html.push('<div class="item__desc">' + m.text + '</div></div>');
+      html.push('<span class="chip" style="color:'+(ok?'var(--ok)':'var(--muted)')+'">'+(ok?'Unlocked':'Locked')+'</span>');
+      html.push('</div>');
+    }
+    // fun achievements
+    html.push('<div class="item"><div class="item__meta"><div class="item__name">First Serve</div><div class="item__desc">Make your first tap.</div></div><span class="chip">'+(state.taps>0?'Unlocked':'Locked')+'</span></div>');
+    html.push('<div class="item"><div class="item__meta"><div class="item__name">Hundred Taps</div><div class="item__desc">Reach 100 total taps.</div></div><span class="chip">'+(state.taps>=100?'Unlocked':'Locked')+'</span></div>');
+    html.push('</div>');
+    el.achList.innerHTML = html.join('');
+  }
+
+  // UI updates
+  function updateUI(){
+    if(uiUpdateScheduled) return; // micro-batch
+    uiUpdateScheduled = true;
+    requestAnimationFrame(()=>{
+      uiUpdateScheduled = false;
+      const perTap = perTapPreview();
+      el.capsValue.textContent = format(state.caps);
+      el.shardValue.textContent = format(state.shards || 0);
+      el.tapValueChip.textContent = '+' + format(perTap) + '/tap';
+      el.statPerTap.textContent = format(perTap);
+      el.statTaps.textContent = format(state.taps);
+      el.statLife.textContent = format(state.lifetime);
+      el.statCrit.textContent = Math.round(critChance()*100) + '%';
+      el.statMult.textContent = (multBase()).toFixed(2) + '×';
+      // TPS over last 3s
+      const cutoff = performance.now() - 3000;
+      const tps = state.meta.recentTaps.filter(t=>t>=cutoff).length/3;
+      el.statTPS.textContent = tps.toFixed(2);
+      // Rush meter
+      const cutoff8 = performance.now() - EVENTS.rush.windowMs;
+      const recentCount = state.meta.recentTaps.filter(t=>t>=cutoff8).length;
+      el.rushMeter.textContent = recentCount + '/' + EVENTS.rush.tapsRequired;
+      // Buttons availability
+      buildUpgrades();
+      buildShop();
+      buildAchievements();
+      // Events chips
+      renderEventChips();
+      // Bowl style modifiers
+      const bowl = el.tapBtn;
+      if(state.upgrades.grip) bowl.classList.add('btn--wide'); else bowl.classList.remove('btn--wide');
+      const rushActive = isRushActive(), spicyActive = isSpicyActive(), infl = influencerActive();
+      document.body.classList.toggle('is-rush', rushActive);
+      document.body.classList.toggle('is-spicy', spicyActive);
+      document.body.classList.toggle('is-influencer', infl);
+      el.rushBadge.hidden = !rushActive;
+      // Prestige button
+      const shardsNow = Math.floor((state.lifetime || 0) / 10000);
+      el.btnPrestige.disabled = shardsNow <= 0 || !state.milestones.m10000;
+      el.btnPrestige.textContent = state.milestones.m10000 ? ('Prestige for ' + shardsNow + ' Shards') : 'Prestige (Locked)';
+      // QA hooks
+      document.body.dataset.rushActive = rushActive ? '1' : '0';
+      document.body.dataset.spicyActive = spicyActive ? '1' : '0';
+      document.body.dataset.influencerActive = infl ? '1' : '0';
+      document.body.dataset.caps = state.caps;
+      document.body.dataset.tapValue = perTap;
+    });
+  }
+  function renderEventChips(){
+    const parts = [];
+    const t = performance.now();
+    if(isRushActive()){
+      const left = Math.max(0, state.events.rushUntil - t);
+      parts.push('<span class="chip" title="Rush Hour active">Rush ' + (left/1000).toFixed(1) + 's</span>');
+    }
+    if(influencerActive()){
+      parts.push('<span class="chip" title="+10 Caps per tap bonus">Influencer x'+ state.events.influencerRemaining +'</span>');
+    }
+    if(isSpicyActive()){
+      const left = Math.max(0, state.events.spicyUntil - t);
+      parts.push('<span class="chip" title="Guaranteed crits">Spicy ' + (left/1000).toFixed(1) + 's</span>');
+    }
+    el.eventChips.innerHTML = parts.join(' ');
+  }
+
+  // Actions
+  function tap(){
+    // init audio context if needed
+    Audio.init(); Audio.resume();
+
+    const tnow = now();
+    state.taps++;
+    state.meta.recentTaps.push(tnow);
+    // keep history short
+    const windowMax = EVENTS.rush.windowMs;
+    const cutoff8 = tnow - windowMax;
+    state.meta.recentTaps = state.meta.recentTaps.filter(t=>t >= cutoff8);
+    // Influencer trigger
+    if(state.taps % EVENTS.influencer.tapsStep === 0){
+      state.events.influencerRemaining = EVENTS.influencer.taps;
+      toast('Influencer Sighting! Next 15 taps +10 Caps');
+      Audio.play('buy');
+    }
+    // Spicy surge: double tap
+    if(state.meta.lastTapAt && (tnow - state.meta.lastTapAt) <= EVENTS.spicy.doubleTapMs && !isSpicyActive()){
+      state.events.spicyUntil = tnow + EVENTS.spicy.duration;
+      toast('Spicy Surge! Guaranteed crits for 2s');
+      Audio.play('crit');
+    }
+    state.meta.lastTapAt = tnow;
+    // Rush Hour check (only after milestone m500)
+    if(state.milestones.m500 && !isRushActive()){
+      const count = state.meta.recentTaps.length;
+      if(count >= EVENTS.rush.tapsRequired){
+        let duration = EVENTS.rush.baseDuration;
+        if(state.upgrades.afterglow) duration += 3000;
+        state.events.rushUntil = tnow + duration;
+        toast('Rush Hour! 2x tap value');
+        Audio.play('buy');
+      }
+    }
+    // Compute tap value
+    let add = genAdditive();
+    let inflAdd = influencerActive() ? EVENTS.influencer.bonusPerTap : 0;
+    let base = BASE_PER_CLICK + add + inflAdd;
+    let mult = multBase();
+    let isCrit = false;
+    if(isSpicyActive()){
+      isCrit = true;
+    }else{
+      const chance = critChance();
+      if(Math.random() < chance) isCrit = true;
+    }
+    if(isCrit) mult *= 3;
+    let gain = Math.max(1, Math.floor(base * mult));
+    // apply counters
+    state.caps += gain;
+    state.lifetime += gain;
+    if(influencerActive()){
+      state.events.influencerRemaining = Math.max(0, state.events.influencerRemaining - 1);
+    }
+    // crit badge flash
+    el.critBadge.hidden = !isCrit;
+    if(isCrit){
+      Audio.play('crit');
+      flash(el.critBadge);
+    }else{
+      Audio.play('click');
+    }
+    // animate bowl
+    flash(el.tapBtn);
+    // crit stats history (to compute rate)
+    state.meta.lastCrits.push(isCrit);
+    if(state.meta.lastCrits.length > 50) state.meta.lastCrits.shift();
+    // Milestones check
+    checkMilestones();
+    dirty = true;
+    updateUI();
+  }
+
+  function tryBuyUpgrade(id){
+    const u = UPGRADES.find(x=>x.id===id);
+    if(!u) return;
+    if(state.upgrades[id]) return;
+    if(state.caps < u.cost) return;
+    state.caps -= u.cost;
+    state.upgrades[id] = true;
+    if(id==='grip'){ flash(el.tapBtn); }
+    toast('Purchased: ' + u.name);
+    Audio.play('buy');
+    dirty = true;
+    updateUI();
+  }
+  function tryBuyGenerator(id){
+    const g = GENERATORS.find(x=>x.id===id);
+    if(!g) return;
+    const cost = generatorCost(id);
+    if(state.caps < cost) return;
+    state.caps -= cost;
+    state.generators[id] = (state.generators[id]||0) + 1;
+    toast('Bought: ' + g.name);
+    Audio.play('buy');
+    dirty = true;
+    updateUI();
+  }
+
+  function checkMilestones(){
+    // Unlock milestones based on lifetime caps
+    for(const m of MILESTONES){
+      if(!state.milestones[m.id] && state.lifetime >= m.at){
+        state.milestones[m.id] = true;
+        toast('Milestone reached: ' + format(m.at) + ' — ' + m.text);
+        Audio.play('slurp');
+      }
+    }
+  }
+
+  // Prestige
+  function canPrestige(){
+    return state.milestones.m10000 && Math.floor((state.lifetime||0)/10000) > 0;
+  }
+  function prestige(){
+    const shardsGain = Math.floor((state.lifetime||0) / 10000);
+    if(shardsGain <= 0) return;
+    const ok = confirm('Prestige now?\nYou will gain '+shardsGain+' Recipe Shards.\nThis resets Caps, tools, and upgrades, but keeps achievements and settings.');
+    if(!ok) return;
+    // Add shards and reset
+    state.shards = (state.shards || 0) + shardsGain;
+    const keep = {
+      shards: state.shards,
+      taps: 0,
+      lifetime: 0,
+      milestones: state.milestones, // keep milestones unlocked as "achievements" view; but they are based on lifetime; however spec says keep achievements; we keep visual unlocks but effects we compute dynamically; only m10000 matters for UI
+    };
+    state = defaultState();
+    state.shards = keep.shards;
+    // Keep achievement flags
+    state.milestones = keep.milestones;
+    toast('Prestiged! +' + shardsGain + ' Shards. All taps boosted by ' + (0.1*state.shards*100).toFixed(0) + '%');
+    Audio.play('buy');
+    dirty = true;
+    updateUI();
+  }
+
+  // Settings toggles
+  function applySettings(){
+    document.body.classList.toggle('high-contrast', !!settings.high_contrast);
+    document.body.classList.toggle('large-text', !!settings.large_text);
+    document.body.classList.toggle('reduced-motion', !!settings.reduced_motion);
+    // Audio
+    if(settings.mute_all) Audio.suspend(); else Audio.resume();
+    // Buttons pressed states
+    el.btnMuteAll.setAttribute('aria-pressed', settings.mute_all ? 'true' : 'false');
+    el.btnMuteSFX.setAttribute('aria-pressed', settings.mute_sfx_only ? 'true' : 'false');
+    saveSettings();
+  }
+
+  // UI Effects
+  function flash(node){
+    if(settings.reduced_motion) return;
+    node.classList.remove('pulse');
+    // force reflow
+    void node.offsetWidth;
+    node.classList.add('pulse');
+    setTimeout(()=>node.classList.remove('pulse'), 180);
+  }
+  function toast(msg){
+    el.ariaLive.textContent = msg;
+  }
+
+  // Build lists once, buttons dynamic via updateUI
+  function bind(){
+    el.tapBtn.addEventListener('click', tap);
+    el.tapBtn.addEventListener('keydown', (e)=>{
+      if(e.key===' ' || e.key==='Enter'){ e.preventDefault(); tap(); }
+    });
+    el.btnSettings.addEventListener('click', ()=>{
+      const hidden = el.settingsPanel.hasAttribute('hidden');
+      if(hidden) el.settingsPanel.removeAttribute('hidden');
+      else el.settingsPanel.setAttribute('hidden','');
+      el.btnSettings.setAttribute('aria-expanded', hidden ? 'true':'false');
+      if(!hidden) el.settingsPanel.open = false;
+    });
+    // Settings toggles
+    el.toggleHC.addEventListener('click', ()=>{ settings.high_contrast = !settings.high_contrast; applySettings(); });
+    el.toggleLT.addEventListener('click', ()=>{ settings.large_text = !settings.large_text; applySettings(); });
+    el.toggleRM.addEventListener('click', ()=>{ settings.reduced_motion = !settings.reduced_motion; applySettings(); });
+    el.btnMuteAll.addEventListener('click', ()=>{ settings.mute_all = !settings.mute_all; applySettings(); });
+    el.btnMuteSFX.addEventListener('click', ()=>{ settings.mute_sfx_only = !settings.mute_sfx_only; applySettings(); });
+
+    el.toggleSFXOnly.addEventListener('click', ()=>{ settings.mute_sfx_only = !settings.mute_sfx_only; applySettings(); });
+    el.toggleMuteAll.addEventListener('click', ()=>{ settings.mute_all = !settings.mute_all; applySettings(); });
+
+    el.btnPrestige.addEventListener('click', ()=>{ if(canPrestige()) prestige(); });
+    el.btnReset.addEventListener('click', ()=>{
+      const ok = confirm('Hard reset? This erases your progress (keeps settings).');
+      if(!ok) return;
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      state = defaultState();
+      updateUI();
+    });
+
+    // Periodic UI timer for events
+    setInterval(()=>{
+      // hide crit badge if time passed
+      el.critBadge.hidden = !isSpicyActive();
+      updateUI();
+    }, 200);
+  }
+
+  // Init
+  load();
+  applySettings();
+  buildUpgrades(); buildShop(); buildAchievements();
+  checkMilestones();
+  updateUI();
+  bind();
+
+  // Prevent iOS zoom on double-tap when we want spicy surge
+  let lastTouch=0;
+  document.addEventListener('touchend',(e)=>{
+    const t = e.timeStamp;
+    if(t-lastTouch<300){ e.preventDefault(); }
+    lastTouch=t;
+  }, {passive:false});
+
+})();
+</script>
+</body>
+</html>
