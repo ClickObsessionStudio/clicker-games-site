@@ -1,43 +1,203 @@
 <!-- clicker-games-site/index.html -->
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Your Games</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Clicker Arcade</title>
+<meta name="color-scheme" content="dark">
 <style>
-  :root{--bg:#0b0f1a;--bg2:#0c1428;--fg:#e9f1fb;--ring:#21345b;--acc:#6ec1ff;--acc2:#a98bff}
-  *{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;color:var(--fg);
-  background:radial-gradient(1000px 600px at 15% 0%,#1a2c56 0,transparent 50%),radial-gradient(900px 700px at 100% 25%,#2a1754 0,transparent 50%),linear-gradient(180deg,#0b0f1a,#0c1428);
-  min-height:100vh;padding:24px;display:grid;grid-template-rows:auto 1fr}
-  .header{max-width:900px;margin:0 auto 18px;display:flex;justify-content:center}
-  h1{margin:0;font-size:clamp(22px,3vw,32px)}
-  .grid{max-width:900px;margin:0 auto;display:flex;flex-wrap:wrap;gap:16px;justify-content:flex-start;align-items:flex-start}
-  .tile{width:160px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid var(--ring);
-    border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;align-self:flex-start}
-  .icon{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#243b6c,#512f90);border:1px solid #2a3c63;display:grid;place-items:center}
-  .icon svg{width:26px;height:26px;fill:#fff;opacity:.9}
-  .name{font-weight:700;font-size:.95rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .play{display:inline-block;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#06121f;text-decoration:none;font-weight:800;
-    padding:6px 12px;border-radius:8px;font-size:.9rem}
-  .empty{color:#aebed6;text-align:center;margin-top:40px}
-</style></head><body>
-  <div class="header"><h1>🎮 Your Games</h1></div>
-  <div id="grid" class="grid"></div>
-  <p id="empty" class="empty" style="display:none">No games yet. Come back later!</p>
+  :root{
+    --bg:#0b0f1a; --bg2:#0c1428; --fg:#e9f1fb; --muted:#9fb1c7;
+    --ring:#21345b; --acc:#66d1ff; --acc2:#a98bff; --tile:#0f1a2e;
+    --glow:0 8px 24px rgba(102,209,255,.25);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color:var(--fg);
+    background:
+      radial-gradient(1200px 800px at 10% -10%, #1a2c56 0%, transparent 55%),
+      radial-gradient(1000px 680px at 110% 20%, #2a1754 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+    min-height:100%;
+  }
+
+  /* --- Shell & Navbar --- */
+  .shell{max-width:1100px; margin:0 auto; padding:18px 16px 40px; display:grid; gap:18px}
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border:1px solid var(--ring); border-radius:14px; padding:10px 14px;
+    backdrop-filter: blur(10px);
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.4px;
+    background: linear-gradient(90deg, #fff, #cfe8ff 30%, #d5ccff 70%, #fff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-size:clamp(18px,2.6vw,24px);
+  }
+  .brand .dot{
+    width:10px; height:10px; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #fff, #6bd0ff 60%, #6bd0ff00);
+    box-shadow: 0 0 18px #6bd0ff88;
+  }
+  .nav-links{display:flex; gap:10px}
+  .nav a{
+    color:#dff1ff; text-decoration:none; border:1px solid var(--ring);
+    padding:8px 12px; border-radius:10px; font-weight:600;
+  }
+  .nav a:hover{background:#0f203b}
+
+  /* --- Hero --- */
+  .hero{
+    text-align:center; padding:20px 10px 8px;
+  }
+  .title{margin:0; font-size:clamp(28px,4.5vw,46px); line-height:1.05}
+  .subtitle{margin:6px 0 0; color:var(--muted); font-size:clamp(14px,1.5vw,16px)}
+
+  /* --- Controls --- */
+  .controls{
+    display:flex; justify-content:center; gap:10px; margin-top:12px;
+  }
+  .search{
+    width:min(560px, 92vw); display:flex; gap:8px; align-items:center;
+    background: rgba(12,22,41,.9); border:1px solid var(--ring);
+    border-radius:12px; padding:10px 12px;
+  }
+  .search input{
+    width:100%; background:transparent; border:none; color:var(--fg); outline:none;
+    font-size:16px;
+  }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+    border-radius:999px; border:1px solid var(--ring); color:#dff1ff;
+  }
+
+  /* --- Grid --- */
+  .grid{
+    margin-top:18px;
+    display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; align-content:flex-start;
+    justify-content:flex-start;
+  }
+  .tile{
+    width:180px; height:auto; align-self:flex-start;
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border:1px solid var(--ring); border-radius:14px; padding:14px;
+    display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  @media (hover:hover){
+    .tile:hover{ transform: translateY(-3px); box-shadow: var(--glow); border-color:#2f4ca0; }
+  }
+  .icon{
+    width:64px; height:64px; border-radius:14px;
+    background:
+      radial-gradient(80px 40px at 30% 25%, rgba(255,255,255,.18), transparent 60%),
+      linear-gradient(135deg, #243b6c, #512f90);
+    border:1px solid #2a3c63; display:grid; place-items:center; flex:0 0 auto;
+  }
+  .icon svg{ width:28px; height:28px; fill:#fff; opacity:.95 }
+  .name{
+    font-weight:800; font-size:1rem; max-width:150px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .cta{
+    display:inline-block; background: linear-gradient(90deg, var(--acc), var(--acc2));
+    color:#06121f; text-decoration:none; font-weight:900; letter-spacing:.2px;
+    padding:8px 12px; border-radius:10px; font-size:.92rem;
+    box-shadow:0 8px 18px rgba(110,193,255,.25);
+  }
+
+  .empty{color:#aebed6; text-align:center; margin-top:28px}
+
+  /* Motion preferences */
+  @media (prefers-reduced-motion: reduce){
+    .tile{ transition:none }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <!-- NAV -->
+    <nav class="nav" aria-label="Main">
+      <div class="brand"><span class="dot"></span> Clicker Arcade</div>
+      <div class="nav-links">
+        <a href="./">Home</a>
+        <a href="#games">Games</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="hero">
+      <h1 class="title">Play Minimal, Juicy Clickers</h1>
+      <p class="subtitle">Fast, offline, single‑file games generated by our pipeline.</p>
+      <div class="controls">
+        <div class="search" role="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 21l-4.2-4.2M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"
+                  fill="none" stroke="#8fb3ff" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input id="q" type="search" placeholder="Search games…" autocomplete="off" aria-label="Search games">
+        </div>
+        <span class="pill" id="count">0 games</span>
+      </div>
+    </header>
+
+    <!-- LIBRARY GRID -->
+    <main id="games" class="grid" aria-live="polite"></main>
+    <p id="empty" class="empty" style="display:none">No games yet. Come back later!</p>
+  </div>
+
 <script>
-  fetch('./games/manifest.json',{cache:'no-store'})
-    .then(r=>r.ok?r.json():[])
+  const grid = document.getElementById('games');
+  const empty = document.getElementById('empty');
+  const q = document.getElementById('q');
+  const count = document.getElementById('count');
+  let games = [];
+
+  function render(list){
+    grid.innerHTML = '';
+    if(!list.length){ empty.style.display='block'; count.textContent = '0 games'; return; }
+    empty.style.display='none';
+    list.forEach(g=>{
+      const el = document.createElement('article');
+      el.className = 'tile';
+      el.setAttribute('data-title', (g.title||'').toLowerCase());
+      el.innerHTML = `
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M7 14h10l2 2h1a2 2 0 0 0 2-2v-1a7 7 0 0 0-7-7H11a7 7 0 0 0-7 7v1a2 2 0 0 0 2 2h1l2-2Z"
+                  stroke="white" stroke-width="1.5" fill="none"/>
+            <circle cx="10" cy="12" r="1.4" fill="white"/>
+            <circle cx="14" cy="12" r="1.4" fill="white"/>
+          </svg>
+        </div>
+        <div class="name" title="${g.title}">${g.title}</div>
+        <a class="cta" href="${g.url}" target="_blank" rel="noopener">▶ Play</a>
+      `;
+      grid.appendChild(el);
+    });
+    count.textContent = `${list.length} ${list.length===1?'game':'games'}`;
+  }
+
+  function filter(){
+    const term = (q.value || '').trim().toLowerCase();
+    if(!term){ render(games); return; }
+    const filtered = games.filter(g => (g.title||'').toLowerCase().includes(term));
+    render(filtered);
+  }
+
+  q.addEventListener('input', filter);
+
+  fetch('./games/manifest.json', {cache:'no-store'})
+    .then(r=>r.ok ? r.json() : [])
     .then(list=>{
-      const grid=document.getElementById('grid'), empty=document.getElementById('empty');
-      if(!list || !list.length){ empty.style.display='block'; return; }
-      list.forEach(g=>{
-        const el=document.createElement('div'); el.className='tile';
-        el.innerHTML = `
-          <div class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M7 14h10l2 2h1a2 2 0 0 0 2-2v-1a7 7 0 0 0-7-7H11a7 7 0 0 0-7 7v1a2 2 0 0 0 2 2h1l2-2Z" stroke="white" stroke-width="1.5" fill="none"/><circle cx="10" cy="12" r="1.4" fill="white"/><circle cx="14" cy="12" r="1.4" fill="white"/></svg>
-          </div>
-          <div class="name" title="${g.title}">${g.title}</div>
-          <a class="play" href="${g.url}" target="_blank">▶ Play</a>`;
-        grid.appendChild(el);
-      });
-    }).catch(()=>{ document.getElementById('empty').style.display='block'; });
+      games = Array.isArray(list) ? list : [];
+      render(games);
+    })
+    .catch(()=>{ games = []; render(games); });
 </script>
-</body></html>
+</body>
+</html>
