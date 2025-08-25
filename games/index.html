@@ -1,0 +1,43 @@
+<!-- clicker-games-site/index.html -->
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Your Games</title>
+<style>
+  :root{--bg:#0b0f1a;--bg2:#0c1428;--fg:#e9f1fb;--ring:#21345b;--acc:#6ec1ff;--acc2:#a98bff}
+  *{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;color:var(--fg);
+  background:radial-gradient(1000px 600px at 15% 0%,#1a2c56 0,transparent 50%),radial-gradient(900px 700px at 100% 25%,#2a1754 0,transparent 50%),linear-gradient(180deg,#0b0f1a,#0c1428);
+  min-height:100vh;padding:24px;display:grid;grid-template-rows:auto 1fr}
+  .header{max-width:900px;margin:0 auto 18px;display:flex;justify-content:center}
+  h1{margin:0;font-size:clamp(22px,3vw,32px)}
+  .grid{max-width:900px;margin:0 auto;display:flex;flex-wrap:wrap;gap:16px;justify-content:flex-start;align-items:flex-start}
+  .tile{width:160px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid var(--ring);
+    border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;align-self:flex-start}
+  .icon{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#243b6c,#512f90);border:1px solid #2a3c63;display:grid;place-items:center}
+  .icon svg{width:26px;height:26px;fill:#fff;opacity:.9}
+  .name{font-weight:700;font-size:.95rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .play{display:inline-block;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#06121f;text-decoration:none;font-weight:800;
+    padding:6px 12px;border-radius:8px;font-size:.9rem}
+  .empty{color:#aebed6;text-align:center;margin-top:40px}
+</style></head><body>
+  <div class="header"><h1>🎮 Your Games</h1></div>
+  <div id="grid" class="grid"></div>
+  <p id="empty" class="empty" style="display:none">No games yet. Come back later!</p>
+<script>
+  fetch('./games/manifest.json',{cache:'no-store'})
+    .then(r=>r.ok?r.json():[])
+    .then(list=>{
+      const grid=document.getElementById('grid'), empty=document.getElementById('empty');
+      if(!list || !list.length){ empty.style.display='block'; return; }
+      list.forEach(g=>{
+        const el=document.createElement('div'); el.className='tile';
+        el.innerHTML = `
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 14h10l2 2h1a2 2 0 0 0 2-2v-1a7 7 0 0 0-7-7H11a7 7 0 0 0-7 7v1a2 2 0 0 0 2 2h1l2-2Z" stroke="white" stroke-width="1.5" fill="none"/><circle cx="10" cy="12" r="1.4" fill="white"/><circle cx="14" cy="12" r="1.4" fill="white"/></svg>
+          </div>
+          <div class="name" title="${g.title}">${g.title}</div>
+          <a class="play" href="${g.url}" target="_blank">▶ Play</a>`;
+        grid.appendChild(el);
+      });
+    }).catch(()=>{ document.getElementById('empty').style.display='block'; });
+</script>
+</body></html>
